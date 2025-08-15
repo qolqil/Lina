@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>For Lina — Open Me 💌</title>
+<meta name="theme-color" content="#ff8fb1">
+<style>
+  /* =========================
+     Modern Pink-Red-White Theme
+  ========================= */
+  :root{
+    --pink:#ffd1dc;    /* light pink */
+    --pink-2:#ff9ab6;  /* soft */
+    --pink-3:#ff5c8a;  /* vivid */
+    --red:#ff2d55;     /* heart red */
+    --rose:#d81b60;    /* text rose */
+    --ink:#6a1330;     /* deep text */
+    --glass:#ffffffa6; /* glass card */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-rounded, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color:var(--ink);
+    overflow:hidden;
+    background: radial-gradient(1200px 700px at 50% -10%, #ffe9f1, #fff0f5);
+  }
+
+  /* Ambient gradient blobs (GPU animated) */
+  .bg{
+    position:fixed; inset:-20% -20% 0 -20%; z-index:-3; filter:saturate(110%);
+    background:
+      radial-gradient(40vmax 30vmax at 20% 10%, rgba(255,92,143,.18), transparent 60%),
+      radial-gradient(45vmax 35vmax at 80% 15%, rgba(255,45,85,.13), transparent 60%),
+      radial-gradient(60vmax 45vmax at 50% 110%, rgba(255,131,166,.16), transparent 60%);
+    animation: drift 28s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes drift{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(0,-2%,0) scale(1.03)}}
+
+  /* Sparkle layer */
+  .sparkles{position:fixed; inset:0; pointer-events:none; z-index:-2}
+  .sparkles i{position:absolute; width:2px; height:2px; border-radius:50%; background:rgba(255,255,255,.95); box-shadow:0 0 10px rgba(255,255,255,.9); opacity:.8; animation: twinkle 3s linear infinite}
+  @keyframes twinkle{0%,100%{opacity:.15; transform:scale(.6)}50%{opacity:1; transform:scale(1)}}
+
+  /* Main card */
+  .shell{position:relative; height:100%; display:grid; place-items:center; padding:24px}
+  .card{width:min(94vw, 900px); padding:22px 22px 30px; border-radius:28px; background:var(--glass); backdrop-filter: blur(12px);
+        box-shadow: 0 20px 70px rgba(255,92,143,.28); text-align:center}
+  h1{margin:0 0 6px; font-weight:900; letter-spacing:.3px; font-size:clamp(18px,2.6vw,24px)}
+  .sub{margin:0 0 12px; opacity:.8; font-size:14px}
+
+  /* Stage + interactive tilt */
+  .stage{display:grid; place-items:center; perspective:1200px; margin:6px 0 0}
+  .env-wrap{position:relative; transform-style:preserve-3d; transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition: transform .18s ease}
+  .glow{position:absolute; inset:-18px; border-radius:26px; background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.9), rgba(255,92,143,.16)); filter: blur(18px); opacity:.85; z-index:-1}
+
+  /* Envelope (SVG) */
+  .envelope{width:min(75vw, 480px); aspect-ratio: 4/3; cursor:pointer; transform-style:preserve-3d}
+  .envelope:focus-visible{outline:4px solid var(--pink-2); outline-offset:10px; border-radius:22px}
+  .flap{transform-origin:50% 20%; transform-box: fill-box; transition: transform .9s cubic-bezier(.2,.7,.2,1)}
+  .letter{transform-origin:50% 100%; transform-box: fill-box; transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .5s}
+  .seal{transform-box: fill-box; transform-origin:50% 50%; transition: transform .5s ease, opacity .5s}
+  .envelope.open .flap{transform: rotateX(170deg)}
+  .envelope.open .letter{transform: translateY(-16%) scale(1.02)}
+  .envelope.open .seal{transform: scale(.6); opacity:0}
+
+  /* Tap pulse */
+  .pulse{position:absolute; inset:0; border-radius:24px; pointer-events:none}
+  .pulse::before{content:""; position:absolute; inset:-8px; border-radius:30px; border:2px dashed #ff9ab6; animation:ring 1.6s ease-out infinite}
+  @keyframes ring{0%{transform:scale(.98); opacity:.85}70%{transform:scale(1.08); opacity:.2}100%{opacity:0; transform:scale(1.14)}}
+
+  /* Message typing */
+  #message{min-height:1.3em; margin-top:18px; font-weight:900; font-size: clamp(28px, 5.6vw, 56px); color:var(--rose); text-shadow:0 16px 40px rgba(216,27,96,.25); letter-spacing:.02em}
+  .line{display:inline-block; border-right:3px solid var(--rose); animation: caret .9s steps(1) infinite}
+  @keyframes caret{50%{border-color:transparent}}
+
+  /* Canvas FX sits beneath UI */
+  #fx{position:fixed; inset:0; z-index:-1}
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .bg, .pulse::before, .sparkles i{animation:none}
+    .env-wrap{transition:none}
+  }
+
+  .footer{position:fixed; bottom:10px; left:50%; transform:translateX(-50%); font-size:12px; opacity:.65}
+</style>
+</head>
+<body>
+  <canvas id="fx"></canvas>
+  <div class="bg"></div>
+  <div class="sparkles" id="sparkles"></div>
+
+  <div class="shell">
+    <div class="card">
+      <h1>Open the letter💌</h1>
+      <p class="sub">This is for My Babyyy.</p>
+
+      <div class="stage">
+        <div class="env-wrap" id="tilt">
+          <div class="glow" aria-hidden="true"></div>
+          <!-- SVG Envelope -->
+          <svg class="envelope" id="envelope" viewBox="0 0 800 600" role="button" tabindex="0" aria-label="Open love letter">
+            <defs>
+              <linearGradient id="gPink" x1="0" x2="1">
+                <stop offset="0%" stop-color="#ffd1dc"/>
+                <stop offset="100%" stop-color="#ff9ab6"/>
+              </linearGradient>
+              <linearGradient id="gDeep" x1="0" x2="1">
+                <stop offset="0%" stop-color="#ff5c8a"/>
+                <stop offset="100%" stop-color="#ff83a6"/>
+              </linearGradient>
+            </defs>
+            <rect x="100" y="140" width="600" height="360" rx="24" fill="url(#gPink)" stroke="#ff83a6" stroke-width="8"/>
+            <path d="M100 500 L400 300 L700 500 Z" fill="url(#gDeep)"/>
+            <path d="M100 500 L400 420 L700 500 Z" fill="#ffb3c7"/>
+            <g class="letter">
+              <rect x="150" y="190" width="500" height="300" rx="18" fill="#fff" stroke="#ffd6e3" stroke-width="6"/>
+              <text x="400" y="330" text-anchor="middle" fill="#ff2d55" font-size="38" font-weight="800" opacity=".14">for Lina</text>
+            </g>
+            <path class="flap" d="M100 140 L400 360 L700 140 Z" fill="#ff5c8a" stroke="#ff83a6" stroke-width="8"/>
+            <g class="seal">
+              <circle cx="400" cy="300" r="42" fill="#fff" stroke="#ff9ab6" stroke-width="8"/>
+              <text x="400" y="308" text-anchor="middle" font-size="32">❤</text>
+            </g>
+          </svg>
+          <div class="pulse"></div>
+        </div>
+      </div>
+
+      <div id="message" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="footer">Made with ♥ for Lina</div>
+
+<script>
+(function(){
+  // ====== Canvas FX (fast + smooth) ======
+  const cvs = document.getElementById('fx');
+  const ctx = cvs.getContext('2d');
+  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  let W = 0, H = 0;
+  function resize(){
+    W = innerWidth; H = innerHeight; cvs.width = W*DPR; cvs.height = H*DPR; cvs.style.width=W+'px'; cvs.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  resize(); addEventListener('resize', resize);
+
+  const particles = [];
+  const MAX = 160; // performance cap
+  function spawnEmoji(x,y,char,size,vx,vy,life){
+    particles.push({x,y,char,size,vx,vy,life,rot: (Math.random()*2-1)*0.2, a:1});
+    if(particles.length>MAX) particles.splice(0, particles.length-MAX);
+  }
+  function burst(x,y){
+    const hearts=42, flutters=18;
+    for(let i=0;i<hearts;i++){
+      const ang = (Math.random()*Math.PI) - Math.PI/2; const sp = 80+Math.random()*100;
+      spawnEmoji(x,y,'❤',22+Math.random()*10, Math.cos(ang)*sp, Math.sin(ang)*sp, 4.5+Math.random()*3);
+    }
+    for(let i=0;i<flutters;i++){
+      const ang = (Math.random()*Math.PI) - Math.PI/2; const sp = 70+Math.random()*90;
+      spawnEmoji(x,y,'🦋',24+Math.random()*10, Math.cos(ang)*sp, Math.sin(ang)*sp, 4.5+Math.random()*3);
+    }
+  }
+  let last=0;
+  function tick(t){
+    requestAnimationFrame(tick);
+    const dt = Math.min(0.033, (t-last)/1000 || 0.016); last=t;
+    ctx.clearRect(0,0,W,H);
+    // physics
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.life -= dt; if(p.life<=0){ particles.splice(i,1); continue; }
+      p.vx += 0.0;           // no horizontal accel
+      p.vy -= 10*dt;         // slight upward drift
+      p.x  += p.vx*dt; p.y  += p.vy*dt;
+      p.a   = Math.min(1, p.life/1.2); // fade near end
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.a);
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot += 0.02*(p.char==='🦋'?1:-1));
+      ctx.font = `bold ${p.size}px system-ui, apple color emoji, segoe ui emoji`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p.char, 0, 0);
+      ctx.restore();
+    }
+  }
+  requestAnimationFrame(tick);
+
+  // ====== Sparkles (static DOM, tiny footprint) ======
+  const sparkles = document.getElementById('sparkles');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('i');
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.top  = Math.random()*100 + 'vh';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    sparkles.appendChild(s);
+  }
+
+  // ====== Tilt interaction (mouse/touch) ======
+  const tilt = document.getElementById('tilt');
+  function setTilt(x,y,rect){
+    const rx = ((y - rect.top)/rect.height - .5) * -8; // rotateX
+    const ry = ((x - rect.left)/rect.width - .5) * 10; // rotateY
+    tilt.style.setProperty('--rx', rx.toFixed(2)+'deg');
+    tilt.style.setProperty('--ry', ry.toFixed(2)+'deg');
+  }
+  tilt.addEventListener('pointermove', (e)=>{ setTilt(e.clientX, e.clientY, tilt.getBoundingClientRect()); });
+  tilt.addEventListener('pointerleave', ()=>{ tilt.style.removeProperty('--rx'); tilt.style.removeProperty('--ry'); });
+
+  // ====== Envelope open + message ======
+  const env = document.getElementById('envelope');
+  const msg = document.getElementById('message');
+  let opened=false;
+
+  function typeWriter(text, speed){
+    msg.innerHTML='';
+    const span=document.createElement('span'); span.className='line'; msg.appendChild(span);
+    let i=0; (function step(){
+      span.textContent=text.slice(0,i++);
+      if(i<=text.length) setTimeout(step, speed); else span.classList.remove('line');
+    })();
+  }
+
+  function openEnvelope(){
+    if(opened) return; opened=true;
+    env.classList.add('open');
+    document.querySelector('.pulse')?.remove();
+    // find envelope center in viewport for burst
+    const r = env.getBoundingClientRect();
+    const x = r.left + r.width/2; const y = r.top + r.height*0.55;
+    burst(x,y);
+    typeWriter('I love you Lina', 60);
+  }
+  env.addEventListener('click', openEnvelope);
+  env.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openEnvelope(); } });
+})();
+</script>
+</body>
+</html>
